@@ -9,7 +9,8 @@ makedocs(;
     repo="https://github.com/oriolcg/GridapFSI.jl/blob/{commit}{path}#L{line}",
     sitename="GridapFSI.jl",
     authors="Oriol Colomes",
-    assets=String[],
+    warnonly = [:cross_references,:missing_docs],
+#    assets=String[],
 )
 
 deploydocs(;

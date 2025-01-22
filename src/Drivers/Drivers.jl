@@ -7,6 +7,7 @@ using Gridap.Geometry
 using Gridap.Arrays
 using Gridap.CellData
 using Gridap.MultiField: ConsecutiveMultiFieldStyle
+using GridapODEs
 using GridapODEs.ODETools
 using GridapODEs.TransientFETools
 using GridapFSI.WeakForms
@@ -18,6 +19,16 @@ using Test
 
 # Julia modules extended in the drivers
 import GridapODEs.TransientFETools: ∂t
+
+TransientTrialFESpace              = GridapODEs.TransientFETools.TransientTrialFESpace
+TransientMultiFieldTrialFESpace    = GridapODEs.TransientFETools.TransientMultiFieldTrialFESpace
+TransientMultiFieldFESpace         = GridapODEs.TransientFETools.TransientMultiFieldFESpace
+TransientFEOperator                = GridapODEs.TransientFETools.TransientFEOperator
+TransientAffineFEOperator          = GridapODEs.TransientFETools.TransientAffineFEOperator
+TransientConstantFEOperator        = GridapODEs.TransientFETools.TransientConstantFEOperator
+TransientConstantMatrixFEOperator  = GridapODEs.TransientFETools.TransientConstantMatrixFEOperator
+
+ThetaMethod  = GridapODEs.ODETools.ThetaMethod
 
 using .WeakForms: lame_parameters
 using .WeakForms: MeshStrategy

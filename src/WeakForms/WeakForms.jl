@@ -1,9 +1,17 @@
 module WeakForms
 
 using Gridap
+using GridapODEs
 using GridapODEs.TransientFETools: ∂t
 using LinearAlgebra: tr, inv, det
 
+TransientTrialFESpace              = GridapODEs.TransientFETools.TransientTrialFESpace
+TransientMultiFieldTrialFESpace    = GridapODEs.TransientFETools.TransientMultiFieldTrialFESpace
+TransientMultiFieldFESpace         = GridapODEs.TransientFETools.TransientMultiFieldFESpace
+TransientFEOperator                = GridapODEs.TransientFETools.TransientFEOperator
+TransientAffineFEOperator          = GridapODEs.TransientFETools.TransientAffineFEOperator
+TransientConstantFEOperator        = GridapODEs.TransientFETools.TransientConstantFEOperator
+TransientConstantMatrixFEOperator  = GridapODEs.TransientFETools.TransientConstantMatrixFEOperator
 export MeshStrategy
 export Coupling
 

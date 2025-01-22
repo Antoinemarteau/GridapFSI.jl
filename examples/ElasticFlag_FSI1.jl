@@ -10,5 +10,6 @@ output = main(
   model="../models/elasticFlagFine.json",
   dt=1.0,
   tf=25.0,
-  theta=0.6
+  theta=0.6,
+  is_vtk=true
 )
