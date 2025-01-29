@@ -69,10 +69,6 @@ function execute(problem::FSIProblem{:elasticFlag}; kwargs...)
   u_noSlip(t::Real) = x -> u_noSlip(x, t)
   ∂tu_in(t) = x -> VectorValue(0.0, 0.0)
   ∂tu_in(x, t) = ∂tu_in(t)(x)
-  T_in = typeof(u_in)
-  T_noSlip = typeof(u_noSlip)
-  @eval ∂t(::$T_in) = $∂tu_in
-  @eval ∂t(::$T_noSlip) = $∂tu_in
   bconds = get_boundary_conditions(problem,strategy,coupling,u_in,u_noSlip)
 
   # Forcing terms
@@ -148,41 +144,40 @@ function execute(problem::FSIProblem{:elasticFlag}; kwargs...)
 
   # Solve Stokes problem
   @timeit "ST problem" begin
-  println("Defining Stokes solver")
-  xh = solve(op_ST)
-  if(is_vtk)
-    writePVD(filePath, Tₕ[:Ωf], [(xh, 0.0)])
+    println("Defining Stokes solver")
+    xh = solve(op_ST)
+    if(is_vtk)
+      writePVD(filePath, Tₕ[:Ωf], [(0.0, xh)])
+    end
   end
-end
 
-# Solve FSI problem
-@timeit "FSI problem" begin
-println("Defining FSI solver")
-xh0  = interpolate(xh,X_FSI(0.0))
-nls = NLSolver(
-  show_trace = true,
-  method = :newton,
-  linesearch = BackTracking(),
-  ftol = 1.0e-6,
-  iterations = 50
+  # Solve FSI problem
+  @timeit "FSI problem" begin
+    println("Defining FSI solver")
+    xh0  = interpolate(xh,X_FSI(0.0))
+    nls = NLSolver(
+      show_trace = true,
+      method = :newton,
+      linesearch = BackTracking(),
+      ftol = 1.0e-6,
+      iterations = 50
+      )
+    ode_solver =  ThetaMethod(nls, dt, θ)
+    xht = solve(ode_solver, op_FSI, t0, tf, xh0)
+  end
+
+  # Compute outputs
+  out_params = Dict{Symbol,Any}(
+    :μ=>μ_f,
+    :Um=>Um,
+    :⌀=>⌀,
+    :ρ=>ρ_f,
+    :θ=>θ,
+    :bdegree=>2*order,
+    :filePath=>filePath,
+    :is_vtk=>is_vtk,
   )
-ode_solver =  ThetaMethod(nls, dt, θ)
-xht = solve(ode_solver, op_FSI, xh0, t0, tf)
-end
-
-# Compute outputs
-out_params = Dict{Symbol,Any}(
-  :μ=>μ_f,
-  :Um=>Um,
-  :⌀=>⌀,
-  :ρ=>ρ_f,
-  :θ=>θ,
-  :bdegree=>2*order,
-  :filePath=>filePath,
-  :is_vtk=>is_vtk,
-  )
-output = computeOutputs(xh0,xht,coupling,strategy,Tₕ,dTₕ,out_params)
-
+  output = computeOutputs(xh0,xht,coupling,strategy,Tₕ,dTₕ,out_params)
 end
 
 function get_boundary_conditions(
@@ -287,7 +282,7 @@ function computeOutputs(
   ## Loop over steps
   outfiles = paraview_collection(filePath, append=true
   ) do pvd
-  for (i,(xh, t)) in enumerate(xht)
+  for (i,(t, xh)) in enumerate(xht)
     println("STEP: $i, TIME: $t")
     println("============================")
 

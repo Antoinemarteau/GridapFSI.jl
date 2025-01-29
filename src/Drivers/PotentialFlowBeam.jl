@@ -33,7 +33,7 @@ function execute(problem::PotentialFlowProblem{:beam};kwargs...)
   # Surface domains
   function is_beam(coords)
     n = length(coords)
-		x = (1/n)*sum(coords)
+    x = (1/n)*sum(coords)
     (xb₀ <= x[1] <= xb₁ ) * ( x[2] ≈ H )
   end
 
@@ -76,23 +76,28 @@ function execute(problem::PotentialFlowProblem{:beam};kwargs...)
   V_Γ = TestFESpace(model_Γ,reffe,conformity=:H1)
   U_Ω = TransientTrialFESpace(V_Ω)
   U_Γ = TransientTrialFESpace(V_Γ)
-  X = TransientMultiFieldFESpace([U_Ω,U_Γ])
+  X = MultiFieldFESpace([U_Ω,U_Γ])
   Y = MultiFieldFESpace([V_Ω,V_Γ])
 
   # Weak form
   γ = 1
   α = 4/Δt^2 + 2/Δt
-  m((ϕtt,ηtt),(w,v)) = ∫( v*ηtt )dΓb
-  c((ϕt,ηt),(w,v)) = ∫( 0.5*(α/g*w + v)*ϕt - w*ηt )dΓb + ∫( 0.5*(α/g*w + v)*ϕt - w*ηt )dΓf
-  a((ϕ,η),(w,v)) = ∫( ∇(ϕ)⋅∇(w) )dΩ + ∫( Δ(v)*Δ(η) + 0.5*(α/g*w + v)*g*η )dΓb + ∫( 0.5*(α/g*w + v)*g*η )dΓf +
+  # mass
+  m(t,(ϕtt,ηtt),(w,v)) = ∫( v*ηtt )dΓb
+  # damping
+  c(t,(ϕt,ηt),(w,v)) = ∫( 0.5*(α/g*w + v)*ϕt - w*ηt )dΓb + ∫( 0.5*(α/g*w + v)*ϕt - w*ηt )dΓf
+  # stiffness
+  a(t,(ϕ,η),(w,v)) = ∫( ∇(ϕ)⋅∇(w) )dΩ + ∫( Δ(v)*Δ(η) + 0.5*(α/g*w + v)*g*η )dΓb + ∫( 0.5*(α/g*w + v)*g*η )dΓf +
                    ∫((mean_mask==1)*( - mean(Δ(η))*jump(∇(v)⋅nΛb) - jump(∇(η)⋅nΛb)*mean(Δ(v)) + γ/h*jump(∇(η)⋅nΛb)*jump(∇(v)⋅nΛb)) )dΛb
-  b((w,v)) = ∫( 0.5*(α/g*w + v)*(-0.0) )dΓb
-  op = TransientConstantFEOperator(m,c,a,b,X,Y)
+  # residual
+  b(t,(ϕ,η),(w,v)) = ∫( 0.5*(α/g*w + v)*(-0.0) )dΓb
+  # TODO check that the update to Gridap 0.1.8 below is correct:
+  op = TransientLinearFEOperator(a,c,m,b,X,Y; constant_forms=(true,true,true))
+  # op = TransientConstantFEOperator(m,c,a,b,X,Y) # Gridap <= 0.1.7; GridapODEs
 
   # Solver
   ls = LUSolver()
-  odes = Newmark(ls,Δt,0.5,0.25)
-  solver = TransientFESolver(odes)
+  solver  = Newmark(ls,Δt,0.5,0.25)
 
   # Initial solution
   x₀ = interpolate_everywhere([ϕₑ(0.0),ηₑ(0.0),],X(0.0))
@@ -100,8 +105,7 @@ function execute(problem::PotentialFlowProblem{:beam};kwargs...)
   a₀ = interpolate_everywhere([∂tt(ϕₑ)(0.0),∂tt(ηₑ)(0.0)],X(0.0))
 
   # Solution
-  sol_t = solve(solver,op,(x₀,v₀,a₀),t₀,tf)
-  #sol_t = solve(solver,op,x₀,t₀,tf)
+  sol_t = solve(solver,op,t₀,tf,(x₀,v₀,a₀))
 
   # Post-process
   l2_Ω(w) = √(∑(∫(w*w)dΩ))

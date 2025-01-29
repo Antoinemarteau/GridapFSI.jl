@@ -50,12 +50,6 @@ function execute(problem::FSIProblem{:oscillator}; kwargs...)
   ∂tu_in(x, t) = ∂tu_in(t)(x)
   ∂tu_sym(x, t) = ∂tu_sym(t)(x)
   ∂tu_cylinder(x, t) = ∂tu_cylinder(t)(x)
-  T_in = typeof(u_in)
-  T_sym = typeof(u_sym)
-  T_cylinder = typeof(u_cylinder)
-  @eval ∂t(::$T_in) = $∂tu_in
-  @eval ∂t(::$T_sym) = $∂tu_sym
-  @eval ∂t(::$T_cylinder) = $∂tu_cylinder
   bconds = get_boundary_conditions(problem,strategy,coupling,u_in,u_sym,u_cylinder,∂tu_cylinder)
 
   # Forcing terms
@@ -158,7 +152,7 @@ function execute(problem::FSIProblem{:oscillator}; kwargs...)
     println("Solving Stokes problem")
     xh = solve(op_ST)
     if(is_vtk)
-      writePVD(filePath, trian, [(xh, 0.0)])
+      writePVD(filePath, trian, [(0.0, xh)])
     end
   end
 
@@ -173,9 +167,8 @@ function execute(problem::FSIProblem{:oscillator}; kwargs...)
     ftol = 1.0e-6,
     iterations = 50
     )
-    odes =  ThetaMethod(nls, dt, θ)
-    solver = TransientFESolver(odes)
-    sol_NSI = solve(solver, op_FSI, xh0, t0, tf)
+    solver =  ThetaMethod(nls, dt, θ)
+    sol_NSI = solve(solver, op_FSI, t0, tf, xh0)
   end
 
   # Compute outputs
@@ -345,7 +338,7 @@ function get_FE_spaces(
     Y_ST = MultiFieldFESpace([Vw_ST,Vu_ST,Vv_ST,Q]),
     X_ST = MultiFieldFESpace([Uw_ST,Uu_ST,Uv_ST,P]),
     Y_NSI = MultiFieldFESpace([Vw_NSI,Vu_NSI,Vv_NSI,Q]),
-    X_NSI = TransientMultiFieldFESpace([Uw_NSI,Uu_NSI,Uv_NSI,P])
+    X_NSI = MultiFieldFESpace([Uw_NSI,Uu_NSI,Uv_NSI,P])
   )
 end
 function computeOutputs(problem::FSIProblem{:oscillator},strategy::WeakForms.MeshStrategy;params=Dict())#, sol, xh0)
@@ -396,7 +389,7 @@ function computeOutputs(problem::FSIProblem{:oscillator},strategy::WeakForms.Mes
   ## Loop over steps
   outfiles = paraview_collection(filePath, append=true
   ) do pvd
-  for (i,(xh, t)) in enumerate(sol)
+  for (i,(t, xh)) in enumerate(sol)
     println("STEP: $i, TIME: $t")
     println("============================")
 

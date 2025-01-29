@@ -8,7 +8,7 @@ using Test
     main(problemName="analytical",is_vtk=true)
     main(problemName="analytical",strategy="linearElasticity")
     #main(problemName="analytical",strategy="neoHookean")
-    end
+  end
   @testset "ElasticFlag.jl" begin
     main()
     main(coupling="weak")

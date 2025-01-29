@@ -29,7 +29,7 @@ function get_FE_spaces(
     Y_ST = MultiFieldFESpace([Vu_ST,Vv_ST,Q]),
     X_ST = MultiFieldFESpace([Uu_ST,Uv_ST,P]),
     Y_FSI = MultiFieldFESpace([Vu_FSI,Vv_FSI,Q]),
-    X_FSI = TransientMultiFieldFESpace([Uu_FSI,Uv_FSI,P])
+    X_FSI = MultiFieldFESpace([Uu_FSI,Uv_FSI,P])
   )
 end
 
@@ -68,7 +68,7 @@ function get_FE_spaces(
     Y_ST = MultiFieldFESpace([Vw_ST,Vu_ST,Vv_ST,Q]),
     X_ST = MultiFieldFESpace([Uw_ST,Uu_ST,Uv_ST,P]),
     Y_FSI = MultiFieldFESpace([Vw_FSI,Vu_FSI,Vv_FSI,Q]),
-    X_FSI = TransientMultiFieldFESpace([Uw_FSI,Uu_FSI,Uv_FSI,P])
+    X_FSI = MultiFieldFESpace([Uw_FSI,Uu_FSI,Uv_FSI,P])
   )
 end
 
@@ -107,7 +107,7 @@ function get_FE_spaces(
     Y_ST = MultiFieldFESpace([Vu_ST,Vv_ST,Q]),
     X_ST = MultiFieldFESpace([Uu_ST,Uv_ST,P]),
     Y_FSI = MultiFieldFESpace([Vu_FSI_f,Vv_FSI_f,Q,Vu_FSI_s,Vv_FSI_s]),
-    X_FSI = TransientMultiFieldFESpace([Uu_FSI_f,Uv_FSI_f,P,Uu_FSI_s,Uv_FSI_s])
+    X_FSI = MultiFieldFESpace([Uu_FSI_f,Uv_FSI_f,P,Uu_FSI_s,Uv_FSI_s])
   )
 end
 
@@ -150,6 +150,6 @@ function get_FE_spaces(
     Y_ST = MultiFieldFESpace([Vw_ST,Vu_ST,Vv_ST,Q]),
     X_ST = MultiFieldFESpace([Uw_ST,Uu_ST,Uv_ST,P]),
     Y_FSI = MultiFieldFESpace([Vw_FSI_f,Vu_FSI_f,Vv_FSI_f,Q,Vu_FSI_s,Vv_FSI_s]),
-    X_FSI = TransientMultiFieldFESpace([Uw_FSI_f,Uu_FSI_f,Uv_FSI_f,P,Uu_FSI_s,Uv_FSI_s])
+    X_FSI = MultiFieldFESpace([Uw_FSI_f,Uu_FSI_f,Uv_FSI_f,P,Uu_FSI_s,Uv_FSI_s])
   )
 end

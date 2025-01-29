@@ -46,26 +46,30 @@ function execute(problem::PotentialFlowProblem{:analytical};kwargs...)
   V_Γ = TestFESpace(model_Γ,reffe,conformity=:H1)
   U = TransientTrialFESpace(V)
   U_Γ = TransientTrialFESpace(V_Γ)
-  X = TransientMultiFieldFESpace([U,U_Γ])
+  X = MultiFieldFESpace([U,U_Γ])
   Y = MultiFieldFESpace([V,V_Γ])
 
   # Weak form
   α = 2/Δt
-  m((ϕt,ηt),(w,v)) = ∫( 0.5*(α/g*(w*ϕt) + v*ϕt) - (w*ηt) )dΓ
-  a((ϕ,η),(w,v)) = ∫( ∇(ϕ)⋅∇(w) )dΩ + ∫( 0.5*(α*(w*η) + g*v*η) )dΓ
-  b((w,v)) = ∫( 0.0*w )dΓ
-  op = TransientConstantFEOperator(m,a,b,X,Y)
+  # mass
+  m(t,(ϕt,ηt),(w,v)) = ∫( 0.5*(α/g*(w*ϕt) + v*ϕt) - (w*ηt) )dΓ
+  # stiffness
+  a(t,(ϕ,η),(w,v)) = ∫( ∇(ϕ)⋅∇(w) )dΩ + ∫( 0.5*(α*(w*η) + g*v*η) )dΓ
+  # residual
+  b(t,(ϕ,η),(w,v)) = ∫( 0.0*w )dΓ
+  # TODO check that the update to Gridap 0.1.8 below is correct:
+  op = TransientLinearFEOperator(a,m,b,X,Y; constant_forms=(true,true))
+  # op = TransientConstantFEOperator(m,a,b,X,Y) # <= Gridap 0.1.7; GridapODEs
 
   # Solver
   ls = LUSolver()
-  odes = ThetaMethod(ls,Δt,θ)
-  solver = TransientFESolver(odes)
+  solver = ThetaMethod(ls,Δt,θ)
 
   # Initial solution
   x₀ = interpolate_everywhere([ϕₑ(0.0),ηₑ(0.0)],X(0.0))
 
   # Solution
-  sol_t = solve(solver,op,x₀,t₀,tf)
+  sol_t = solve(solver,op,t₀,tf,x₀)
 
   # Post-process
   l2_Ω(w) = √(∑(∫(w*w)dΩ))

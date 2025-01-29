@@ -50,10 +50,6 @@ function execute(problem::FSIProblem{:analytical};kwargs...)
   ∂tv(t) = x -> VectorValue(ForwardDiff.derivative(t -> get_array(v(x,t)),t))
   ∂tu(x,t) = ∂tu(t)(x)
   ∂tv(x,t) = ∂tv(t)(x)
-  T_u = typeof(u)
-  T_v = typeof(v)
-  @eval ∂t(::$T_u) = $∂tu
-  @eval ∂t(::$T_v) = $∂tv
   p(x,t) = 0.0
   p(t::Real) = x -> p(x,t)
   bconds = get_boundary_conditions(problem,strategy,u,v)
@@ -80,10 +76,10 @@ function execute(problem::FSIProblem{:analytical};kwargs...)
     return fu
   end
   fu_Ωf(t) = fu_closure(t,strategy)
-  fv_Ωf(t) = x -> ρ_f * ∂t(v)(t)(x) - μ_f * Δ(v(t))(x) + ∇(p(t))(x) + ρ_f*( (∇(v(t))(x)')⋅(v(t)(x) - ∂t(u)(t)(x)) )
+  fv_Ωf(t) = x -> ρ_f * ∂tv(t)(x) - μ_f * Δ(v(t))(x) + ∇(p(t))(x) + ρ_f*( (∇(v(t))(x)')⋅(v(t)(x) - ∂tu(t)(x)) )
   fp_Ωf(t) = x -> (∇⋅v(t))(x)
-  fu_Ωs(t) = x -> ∂t(u)(t)(x) - v(t)(x)
-  fv_Ωs(t) = x -> ρ_s * ∂t(v)(t)(x) #- (∇⋅(F(t)⋅S_SV(t)))(x)  # Divergence of a a doted function not working yet...
+  fu_Ωs(t) = x -> ∂tu(t)(x) - v(t)(x)
+  fv_Ωs(t) = x -> ρ_s * ∂tv(t)(x) #- (∇⋅(F(t)⋅S_SV(t)))(x)  # Divergence of a a doted function not working yet...
 
   # Discrete model
   println("Defining discrete model")
@@ -184,7 +180,7 @@ function execute(problem::FSIProblem{:analytical};kwargs...)
     println("Defining Stokes solver")
     xh = solve(op_ST)
     if(is_vtk)
-      writePVD(filePath, Tₕ[:Ωf], [(xh, 0.0)])
+      writePVD(filePath, Tₕ[:Ωf], [(0.0, xh)])
     end
   end
 
@@ -215,7 +211,7 @@ function execute(problem::FSIProblem{:analytical};kwargs...)
   iterations = 50
   )
   ode_solver =  ThetaMethod(nls, dt, 0.5)
-  xht = solve(ode_solver, op_FSI, xh0, t0, tf)
+  xht = solve(ode_solver, op_FSI, t0, tf, xh0)
   end
 
   # Compute outputs
@@ -297,7 +293,7 @@ function get_FE_spaces(problem::FSIProblem{:analytical},strategy::WeakForms.Mesh
       Y_ST = MultiFieldFESpace([Vu_ST,Vv_ST,Q]),
       X_ST = MultiFieldFESpace([Uu_ST,Uv_ST,P]),
       Y_FSI = MultiFieldFESpace([Vu_FSI,Vv_FSI,Q]),
-      X_FSI = TransientMultiFieldFESpace([Uu_FSI,Uv_FSI,P])
+      X_FSI = MultiFieldFESpace([Uu_FSI,Uv_FSI,P])
   )
 end
 
@@ -317,7 +313,7 @@ function computeOutputs(xht,Tₕ,dTₕ,strategy,params)
 
   ## Loop over steps
   outfiles = paraview_collection(filePath, append=true) do pvd
-    for (i,(xh, t)) in enumerate(xht)
+    for (i,(t, xh)) in enumerate(xht)
       println("STEP: $i, TIME: $t")
       println("============================")
 

@@ -6,12 +6,12 @@ include("Oscillator.jl")
 # Output function
 function writePVD(filePath::String, trian::Triangulation, sol; append=false)
     outfiles = paraview_collection(filePath, append=append) do pvd
-        for (i, (xh, t)) in enumerate(sol)
+        for (i, (t, xh)) in enumerate(sol)
             println("STEP: $i, TIME: $t")
             println("============================")
             uh = xh[1]
             vh = xh[2]
-						ph = xh[3]
+            ph = xh[3]
             pvd[t] = createvtk(
                 trian,
                 filePath * "_$t.vtu",
